@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "./App.css";
 
-type Cell = { mode: string; value: number };
+type Cell = { mode: string; value: number; level: number };
 type Grid = Array<Array<Cell | null>>;
 function App() {
   const [money, setMoney] = useState(20);
@@ -12,7 +12,7 @@ function App() {
     [null, null, null, null, null],
     [null, null, null, null, null],
   ]);
-
+  const [baseCost, setBaseCost] = useState(10);
   let tick = 0;
   for (let i = 0; i < 5; i++) {
     for (let j = 0; j < 5; j++) {
@@ -24,20 +24,33 @@ function App() {
   }
 
   function handleClick(rIndex: number, cIndex: number) {
-    if (money >= 10) {
-      const newGrid = structuredClone(grid);
-      let currCell = newGrid[rIndex][cIndex];
+    const newGrid = structuredClone(grid);
+    let currCell = newGrid[rIndex][cIndex];
+
+    if (!!currCell && currCell?.level >= 5) {
+      return;
+    }
+    const cost = !!currCell?.value
+      ? baseCost * (currCell?.value + 1)
+      : baseCost;
+
+    if (money >= cost) {
       if (currCell === null) {
-        currCell = { mode: "generator", value: 1 };
+        currCell = { mode: "generator", value: 1, level: 1 };
         newGrid[rIndex][cIndex] = currCell;
       } else {
-        currCell.value += 1;
+        currCell.value *= 2;
+        currCell.level += 1;
       }
 
       setGrid(newGrid);
-      setMoney(money - 10);
+      setMoney(money - cost);
+      setBaseCost(baseCost + 1);
     }
   }
+  //leech
+  //color
+  //right click to remove
 
   return (
     <>
@@ -50,8 +63,25 @@ function App() {
               <tr>
                 {row.map((cell, cIndex) => {
                   return (
-                    <td onClick={() => handleClick(rIndex, cIndex)}>
-                      {cell?.value}
+                    <td
+                      onClick={() => handleClick(rIndex, cIndex)}
+                      onContextMenu={() => handleClick(rIndex, cIndex)}
+                    >
+                      {!!!cell?.value ? (
+                        <>{baseCost}</>
+                      ) : (
+                        <>
+                          {cell?.mode} level {cell?.level}
+                          <br />
+                          increase: {cell?.value}
+                          <br />
+                          {cell?.level < 5 ? (
+                            <>cost: {baseCost * (cell?.value + 1)}$</>
+                          ) : (
+                            <></>
+                          )}
+                        </>
+                      )}
                     </td>
                   );
                 })}
